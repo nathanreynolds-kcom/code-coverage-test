@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+
+main() {
+    set -euo pipefail
+
+    local FAILFAST=
+
+    # Parse arguments. We'll pass these through to each unit test run, though
+    # we can use e.g --failfast to abort after the first failure.
+    for ARG in "$@"; do
+        if [[ $ARG == "--failfast" ]]; then
+            FAILFAST=y
+        fi
+    done
+
+    local ERROR=
+    for PACKAGE_PATH in features/lib/* features/src/*; do
+        echo
+        echo_separator
+        echo "Testing $PACKAGE_PATH"
+        echo
+        if ! test "$PACKAGE_PATH" "$@"; then
+            ERROR=y
+            if [[ $FAILFAST != "" ]]; then
+                break
+            fi
+        fi
+    done
+
+    echo
+    echo_separator
+    echo "Code coverage"
+    echo
+    coverage combine
+    coverage report
+    # TODO: Upload coverage to Codacy
+
+    if [[ $ERROR != "" ]]; then
+        return 1
+    fi
+}
+
+test() {
+    COVERAGE_FILE=".coverage.$(echo "$PACKAGE_PATH" | sha256sum | cut -f1 -d' ')" \
+        coverage run --source="$PACKAGE_PATH/src" \
+            -m unittest discover -s "$PACKAGE_PATH/tests" "$@"
+}
+
+echo_separator() {
+    echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
+}
+
+main "$@"

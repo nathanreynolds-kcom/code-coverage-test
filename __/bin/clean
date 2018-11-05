@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+
+# Remove intermediate files from the project - e.g .tox, .egg-info, etc.
+
+main() {
+    find "$(dirname $0)/.." \( \
+        -name .coverage \
+        -or -name \*.egg-info \
+        -or -name .eggs \
+        -or -name .tox \
+    \) -print0 \
+        | xargs -0 rm -rfv
+}
+
+main "$@"
